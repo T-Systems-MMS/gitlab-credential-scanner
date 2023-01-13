@@ -6,10 +6,6 @@ This repo runs a CI Job which scans all accessible repositories for credentials 
 
 If you fixed the findings you can close the created issue and this job will automatically reopen and update the existing ticket if there are new issues found.
 
-## Requirements
-
-- GitLab Runner
-
 ## Documentation
 
 Please have a look at our official documentation: [https://github.com/T-Systems-MMS/gitlab-credential-scanner](https://github.com/T-Systems-MMS/gitlab-credential-scanner)
