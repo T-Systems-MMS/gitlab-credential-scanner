@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "gitlabci": {
+    "fileMatch": [
+      "^.gitlab-ci.yml$"
+    ]
+  },
+  "packageRules": [
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "labels": [
+        "Renovate::Docker"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gitlabci"
+      ],
+      "labels": [
+        "Renovate::Gitlab-CI"
+      ]
+    },
+    {
+      "matchManagers": [
+        "git-submodules"
+      ],
+      "labels": [
+        "Renovate::Submodule"
+      ]
+    }
+  ]
+}

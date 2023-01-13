@@ -1,0 +1,20 @@
+---
+stages:
+  - test
+
+test:
+  stage: test
+  script:
+    - docker build -t kics .
+    - docker run --rm -e GITLAB_ACCESS_TOKEN=${KICS_SCAN_TEST_TOKEN} kics --scan-repo scanner-insecure-repo
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME != $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - changes:
+        - Dockerfile
+        - requirements.txt
+        - repo_scanner.py

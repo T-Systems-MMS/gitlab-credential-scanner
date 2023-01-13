@@ -1,0 +1,5 @@
+---
+site_name: Automated Credential Scans with KICS
+site_url: https://T-Systems-MMS.github.io/gitlab-credential-scanner/
+theme:
+  name: material
