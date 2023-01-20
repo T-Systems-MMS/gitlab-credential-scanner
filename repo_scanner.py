@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 A script to run kics scans on multiple gitlab repositories in a row.
+
+For a detailed overview over the used GitLab API see:
+    https://python-gitlab.readthedocs.io/en/stable/index.html
 """
 
 # import our used python libraries
@@ -84,6 +87,25 @@ def create_description(scanner_output):
 
     return description
 
+def close_issue(project):
+    """
+    close the issue if scan is successful
+    """
+    issue_list = project.issues.list(labels=["automated-credential-scan"])
+    issues_fixed = 0
+
+    if len(issue_list) > 0:
+        issue = issue_list[0]
+        issues_fixed = 1
+        if issue.state == "opened":
+            issue.state_event = "close"
+            comment_text = ('Closed by the credential scanner because it did not '
+                            'find any leaked credentials.')
+            issue.notes.create({'body': comment_text})
+            issue.save()
+
+    return issues_fixed
+
 def create_issue(project, scanner_output):
     """
     function to create a issue in out GitLab if we found something with our scan
@@ -95,6 +117,9 @@ def create_issue(project, scanner_output):
         issue = issue_list[0]
         if issue.state == "closed":
             issue.state_event = "reopen"
+            comment_text = ('Reopened by the credential scanner because it did find '
+                            'leaked credentials.')
+            issue.notes.create({'body': comment_text})
         issue.description = create_description(scanner_output=scanner_output)
         issue.save()
     else:
@@ -106,6 +131,11 @@ def create_issue(project, scanner_output):
             }
         )
 
+    issues_found = 1
+    return issues_found
+
+projects_with_issues_found = 0 # pylint: disable=invalid-name
+projects_with_issues_fixed = 0 # pylint: disable=invalid-name
 
 for p in projects:
     project_id = getattr(p, "id")
@@ -132,7 +162,7 @@ for p in projects:
             "kics",
             "scan",
             "-i",
-            "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71",
+            "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71", # kics id for leaked credential scan only
             "--no-color",
             "-p",
             ".",
@@ -146,8 +176,15 @@ for p in projects:
         logging.info(
             "%s: returncode is %s - create a ticket", project_path, scanner.returncode
         )
-        create_issue(project=p, scanner_output=scanner.stdout.decode("utf-8"))
+        projects_with_issues_found += create_issue(
+            project=p,
+            scanner_output=scanner.stdout.decode("utf-8")
+        )
     else:
+        projects_with_issues_fixed += close_issue(project=p)
         logging.info("kics scan successful")
 
     tmpdir.cleanup()
+
+logging.info('issues found: %s', projects_with_issues_found)
+logging.info('issues fixed: %s', projects_with_issues_fixed)
