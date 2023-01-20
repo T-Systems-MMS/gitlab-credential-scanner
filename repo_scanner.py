@@ -49,6 +49,14 @@ parser.add_argument(
     default='default_issue_description.j2',
     dest="template_name",
 )
+parser.add_argument(
+    "--log-service",
+    nargs=2,
+    help="name and url of your log-service: Loki URL",
+    required=False,
+    dest="log_service"
+)
+
 args = parser.parse_args()
 
 gitlab_url = f"https://{args.gitlab_hostname}"
@@ -133,6 +141,14 @@ def create_issue(project, scanner_output):
 
     issues_found = 1
     return issues_found
+
+def push_to_log_service(log_service):
+    service = str(log_service[0]).lower()
+    url = log_service[1]
+
+    if service == "loki":
+        url = "test"
+# todo: weitermachen
 
 projects_with_issues_found = 0 # pylint: disable=invalid-name
 projects_with_issues_fixed = 0 # pylint: disable=invalid-name
