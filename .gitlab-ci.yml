@@ -2,7 +2,12 @@
 stages:
   - kics-scan
 
+.docker-login: &docker-login
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
 test:
+  <<: *docker-login
   stage: kics-scan
   script:
     - docker run $CI_REGISTRY_IMAGE:latest --scan-repo ${TEST_REPOSITORY} --gitlab-hostname ${GITLAB_HOSTNAME} --gitlab-access-token ${GITLAB_ACCESS_TOKEN}
@@ -12,6 +17,7 @@ test:
     - if: $CI_PIPELINE_SOURCE == "schedule"
 
 #scan:
+#  <<: *docker-login
 #  stage: kics-scan
 #  script:
 #    - docker run $CI_REGISTRY_IMAGE:latest --gitlab-hostname ${GITLAB_HOSTNAME} --gitlab-access-token ${GITLAB_ACCESS_TOKEN}
@@ -22,9 +28,9 @@ test:
 #    - if: $CI_PIPELINE_SOURCE == "schedule"
 
 build:
+  <<: *docker-login
   stage: kics-scan
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t $CI_REGISTRY_IMAGE:latest .
     - docker push $CI_REGISTRY_IMAGE:latest
   rules:
