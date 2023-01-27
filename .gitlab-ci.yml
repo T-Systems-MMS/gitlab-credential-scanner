@@ -11,15 +11,15 @@ test:
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
 
-scan:
-  stage: kics-scan
-  script:
-    - docker run $CI_REGISTRY_IMAGE:latest --gitlab-hostname ${GITLAB_HOSTNAME} --gitlab-access-token ${GITLAB_ACCESS_TOKEN}
-  needs:
-    - build
-    - test
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+#scan:
+#  stage: kics-scan
+#  script:
+#    - docker run $CI_REGISTRY_IMAGE:latest --gitlab-hostname ${GITLAB_HOSTNAME} --gitlab-access-token ${GITLAB_ACCESS_TOKEN}
+#  needs:
+#    - build
+#    - test
+#  rules:
+#    - if: $CI_PIPELINE_SOURCE == "schedule"
 
 build:
   stage: kics-scan
