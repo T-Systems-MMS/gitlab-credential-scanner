@@ -10,10 +10,6 @@ test:
     - build
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
-    - changes:
-        - Dockerfile
-        - requirements.txt
-        - repo_scanner.py
 
 scan:
   stage: kics-scan
@@ -33,7 +29,3 @@ build:
     - docker push $CI_REGISTRY_IMAGE:latest
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
-    - changes:
-        - Dockerfile
-        - requirements.txt
-        - repo_scanner.py
