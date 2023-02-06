@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-A script to run kics scans on multiple gitlab repositories in a row.
+Run kics scans on multiple gitlab repositories in a row.
 
 For a detailed overview over the used GitLab API see:
     https://python-gitlab.readthedocs.io/en/stable/index.html
@@ -46,7 +46,7 @@ parser.add_argument(
     "--template-name",
     help="name of the template file used for the ticket description",
     required=False,
-    default='default_issue_description.j2',
+    default="default_issue_description.j2",
     dest="template_name",
 )
 args = parser.parse_args()
@@ -64,9 +64,11 @@ try:
     logging.info("fetch list of all projects from %s", gitlab_url)
 
     if args.scan_repo:
-        projects = gl.projects.list(search=args.scan_repo, order_by="id", min_access_level=20)
+        projects = gl.projects.list(
+            search=args.scan_repo, order_by="id", min_access_level=20
+        )
     else:
-        projects = gl.projects.list(get_all=True, order_by='id', min_access_level=20)
+        projects = gl.projects.list(get_all=True, order_by="id", min_access_level=20)
 except GitlabListError:
     logging.error("can't fetch list from %s", gitlab_url)
 except GitlabAuthenticationError:
@@ -74,23 +76,19 @@ except GitlabAuthenticationError:
 
 logging.debug(projects)
 
-def create_description(scanner_output):
-    """
-    function to create the description for gitlab issue
-    """
-    env = Environment(
-      loader = FileSystemLoader('./templates/')
-    )
 
-    template = env.get_template(f'{args.template_name}')
+def create_description(scanner_output):
+    """Create the description for the issue."""
+    env = Environment(loader=FileSystemLoader("./templates/"))
+
+    template = env.get_template(f"{args.template_name}")
     description = template.render(scanner_output=scanner_output)
 
     return description
 
+
 def close_issue(project):
-    """
-    close the issue if scan is successful
-    """
+    """Close the issue if scan is successful."""
     issue_list = project.issues.list(labels=["automated-credential-scan"])
     issues_fixed = 0
 
@@ -99,17 +97,18 @@ def close_issue(project):
         issues_fixed = 1
         if issue.state == "opened":
             issue.state_event = "close"
-            comment_text = ('Closed by the credential scanner because it did not '
-                            'find any leaked credentials.')
-            issue.notes.create({'body': comment_text})
+            comment_text = (
+                "Closed by the credential scanner because it did not "
+                "find any leaked credentials."
+            )
+            issue.notes.create({"body": comment_text})
             issue.save()
 
     return issues_fixed
 
+
 def create_issue(project, scanner_output):
-    """
-    function to create a issue in out GitLab if we found something with our scan
-    """
+    """Create an issue if we found something with our scan."""
     issue_list = project.issues.list(labels=["automated-credential-scan"])
 
     if len(issue_list) > 0:
@@ -117,9 +116,11 @@ def create_issue(project, scanner_output):
         issue = issue_list[0]
         if issue.state == "closed":
             issue.state_event = "reopen"
-            comment_text = ('Reopened by the credential scanner because it did find '
-                            'leaked credentials.')
-            issue.notes.create({'body': comment_text})
+            comment_text = (
+                "Reopened by the credential scanner because it did find "
+                "leaked credentials."
+            )
+            issue.notes.create({"body": comment_text})
         issue.description = create_description(scanner_output=scanner_output)
         issue.save()
     else:
@@ -134,8 +135,9 @@ def create_issue(project, scanner_output):
     issues_found = 1
     return issues_found
 
-projects_with_issues_found = 0 # pylint: disable=invalid-name
-projects_with_issues_fixed = 0 # pylint: disable=invalid-name
+
+projects_with_issues_found = 0  # pylint: disable=invalid-name
+projects_with_issues_fixed = 0  # pylint: disable=invalid-name
 
 for p in projects:
     project_id = getattr(p, "id")
@@ -153,7 +155,7 @@ for p in projects:
     tmpdir = tempfile.TemporaryDirectory(prefix="kics-scan")
 
     logging.debug("%s: cloning", project_path)
-    Repo.clone_from(url=project_url, to_path=tmpdir.name, multi_options=['--depth 1'])
+    Repo.clone_from(url=project_url, to_path=tmpdir.name, multi_options=["--depth 1"])
     logging.debug("%s: clone done", project_path)
 
     logging.info("%s: starting kics scan", project_path)
@@ -162,7 +164,7 @@ for p in projects:
             "kics",
             "scan",
             "-i",
-            "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71", # kics id for leaked credential scan only
+            "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71",  # kics id for leaked credential scan only
             "--no-color",
             "-p",
             ".",
@@ -177,8 +179,7 @@ for p in projects:
             "%s: returncode is %s - create a ticket", project_path, scanner.returncode
         )
         projects_with_issues_found += create_issue(
-            project=p,
-            scanner_output=scanner.stdout.decode("utf-8")
+            project=p, scanner_output=scanner.stdout.decode("utf-8")
         )
     else:
         projects_with_issues_fixed += close_issue(project=p)
@@ -186,5 +187,5 @@ for p in projects:
 
     tmpdir.cleanup()
 
-logging.info('issues found: %s', projects_with_issues_found)
-logging.info('issues fixed: %s', projects_with_issues_fixed)
+logging.info("issues found: %s", projects_with_issues_found)
+logging.info("issues fixed: %s", projects_with_issues_fixed)
