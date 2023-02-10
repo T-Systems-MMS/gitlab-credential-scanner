@@ -149,7 +149,7 @@ def run_scan(
     logging.info("%s: starting kics scan", project_path)
     scanner = subprocess.run(
         [
-            "/home/segu/dev/kics/bin/kics",
+            "kics",
             "scan",
             "-i",
             "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71",  # kics id for leaked credential scan only
