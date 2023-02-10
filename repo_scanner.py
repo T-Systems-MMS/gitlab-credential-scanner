@@ -59,22 +59,27 @@ gitlab_url_with_login = (
 # login to gitlab with private token
 gl = Gitlab(gitlab_url, private_token=args.gitlab_access_token)
 
-# get a list of all projects
-try:
-    logging.info("fetch list of all projects from %s", gitlab_url)
 
-    if args.scan_repo:
-        projects = gl.projects.list(
-            search=args.scan_repo, order_by="id", min_access_level=20
-        )
-    else:
-        projects = gl.projects.list(get_all=True, order_by="id", min_access_level=20)
-except GitlabListError:
-    logging.error("can't fetch list from %s", gitlab_url)
-except GitlabAuthenticationError:
-    logging.error("cannot authenticate against %s", gitlab_url)
+def get_projects():
+    """Get a list of all projects."""
+    try:
 
-logging.debug(projects)
+        if args.scan_repo:
+            logging.info("fetch %s from %s", args.scan_repo, gitlab_url)
+            projects = gl.projects.list(
+                search=args.scan_repo, order_by="id", min_access_level=20
+            )
+        else:
+            logging.info("fetch list of all projects from %s", gitlab_url)
+            projects = gl.projects.list(
+                get_all=True, order_by="id", min_access_level=20
+            )
+    except GitlabListError:
+        logging.error("can't fetch list from %s", gitlab_url)
+    except GitlabAuthenticationError:
+        logging.error("cannot authenticate against %s", gitlab_url)
+    logging.debug(projects)
+    return projects
 
 
 def create_description(scanner_output):
@@ -136,32 +141,15 @@ def create_issue(project, scanner_output):
     return issues_found
 
 
-projects_with_issues_found = 0  # pylint: disable=invalid-name
-projects_with_issues_fixed = 0  # pylint: disable=invalid-name
-
-for p in projects:
-    project_id = getattr(p, "id")
-    project_path = getattr(p, "path_with_namespace")
-    project_url = f"{gitlab_url_with_login}/{project_path}.git"
-
-    # skip project if there is an issue to disable scanning
-    if len(p.issues.list(labels=["automated-credential-scan-disabled"])) > 0:
-        logging.info(
-            '%s has label "automated-credential-scan-disabled" - skipping', project_path
-        )
-        continue
-
-    logging.debug(project_url)
-    tmpdir = tempfile.TemporaryDirectory(prefix="kics-scan")
-
-    logging.debug("%s: cloning", project_path)
-    Repo.clone_from(url=project_url, to_path=tmpdir.name, multi_options=["--depth 1"])
-    logging.debug("%s: clone done", project_path)
+def run_scan(
+    project, project_path, projects_with_issues_found, projects_with_issues_fixed
+):
+    """Scan a project with kics."""
 
     logging.info("%s: starting kics scan", project_path)
     scanner = subprocess.run(
         [
-            "kics",
+            "/home/segu/dev/kics/bin/kics",
             "scan",
             "-i",
             "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71",  # kics id for leaked credential scan only
@@ -179,13 +167,47 @@ for p in projects:
             "%s: returncode is %s - create a ticket", project_path, scanner.returncode
         )
         projects_with_issues_found += create_issue(
-            project=p, scanner_output=scanner.stdout.decode("utf-8")
+            project=project, scanner_output=scanner.stdout.decode("utf-8")
         )
     else:
-        projects_with_issues_fixed += close_issue(project=p)
+        projects_with_issues_fixed += close_issue(project=project)
         logging.info("kics scan successful")
 
-    tmpdir.cleanup()
+    return projects_with_issues_fixed, projects_with_issues_found
 
-logging.info("issues found: %s", projects_with_issues_found)
-logging.info("issues fixed: %s", projects_with_issues_fixed)
+
+def clone_repo(project_url):
+    """Clone the specified repository"""
+    logging.debug(project_url)
+    Repo.clone_from(url=project_url, to_path=tmpdir.name, multi_options=["--depth 1"])
+
+
+if __name__ == "__main__":
+    p_with_issues_fixed = 0
+    p_with_issues_found = 0
+    for p in get_projects():
+        p_id = getattr(p, "id")
+        p_path = getattr(p, "path_with_namespace")
+        p_url = f"{gitlab_url_with_login}/{p_path}.git"
+
+        # skip project if there is an issue to disable scanning
+        if len(p.issues.list(labels=["automated-credential-scan-disabled"])) > 0:
+            logging.info(
+                '%s has label "automated-credential-scan-disabled" - skipping', p_path
+            )
+            continue
+
+        tmpdir = tempfile.TemporaryDirectory(prefix="kics-scan")
+
+        clone_repo(project_url=p_url)
+        p_with_issues_fixed, p_with_issues_found = run_scan(
+            project=p,
+            project_path=p_path,
+            projects_with_issues_fixed=p_with_issues_fixed,
+            projects_with_issues_found=p_with_issues_fixed,
+        )
+
+        tmpdir.cleanup()
+
+    logging.info("issues found: %s", p_with_issues_found)
+    logging.info("issues fixed: %s", p_with_issues_fixed)
