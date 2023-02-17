@@ -55,8 +55,8 @@ def close_issue(project):
 
     if len(issue_list) > 0:
         issue = issue_list[0]
-        issues_fixed = 1
         if issue.state == "opened":
+            issues_fixed = 1
             issue.state_event = "close"
             comment_text = (
                 "Closed by the credential scanner because it did not "
@@ -118,6 +118,9 @@ def run_scan(
         check=False,
     )
 
+    logging.debug(scanner.stdout)
+    logging.debug(scanner.stderr)
+
     if scanner.returncode != 0:
         logging.info(
             "%s: returncode is %s - create a ticket", project_path, scanner.returncode
@@ -127,7 +130,7 @@ def run_scan(
         )
     else:
         projects_with_issues_fixed += close_issue(project=project)
-        logging.info("kics scan successful")
+        logging.info("%s: kics scan successful - did not find any leaked credentials.", project_path)
 
     return projects_with_issues_fixed, projects_with_issues_found
 
