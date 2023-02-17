@@ -55,8 +55,8 @@ def close_issue(project):
 
     if len(issue_list) > 0:
         issue = issue_list[0]
-        issues_fixed = 1
         if issue.state == "opened":
+            issues_fixed = 1
             issue.state_event = "close"
             comment_text = (
                 "Closed by the credential scanner because it did not "
