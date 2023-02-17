@@ -15,50 +15,6 @@ from gitlab import Gitlab, GitlabListError, GitlabAuthenticationError
 from git import Repo
 from jinja2 import Environment, FileSystemLoader
 
-# initialize logging and set it to INFO
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%d/%m/%y %H:%M:%S",
-)
-
-parser = ArgumentParser()
-parser.add_argument(
-    "--scan-repo",
-    help="scan explicit repo with this name",
-    required=False,
-    default=False,
-    dest="scan_repo",
-)
-parser.add_argument(
-    "--gitlab-hostname",
-    help="hostname of gitlab (e.g. git.example.com)",
-    required=True,
-    dest="gitlab_hostname",
-)
-parser.add_argument(
-    "--gitlab-access-token",
-    help="access token for project or projects",
-    required=True,
-    dest="gitlab_access_token",
-)
-parser.add_argument(
-    "--template-name",
-    help="name of the template file used for the ticket description",
-    required=False,
-    default="default_issue_description.j2",
-    dest="template_name",
-)
-args = parser.parse_args()
-
-gitlab_url = f"https://{args.gitlab_hostname}"
-gitlab_url_with_login = (
-    f"https://scanner:{args.gitlab_access_token}@{args.gitlab_hostname}"
-)
-
-# login to gitlab with private token
-gl = Gitlab(gitlab_url, private_token=args.gitlab_access_token)
-
 
 def get_projects():
     """Get a list of all projects."""
@@ -157,7 +113,7 @@ def run_scan(
             "-p",
             ".",
         ],
-        cwd=tmpdir.name,
+        cwd=tmpdir,
         capture_output=True,
         check=False,
     )
@@ -179,12 +135,55 @@ def run_scan(
 def clone_repo(project_url):
     """Clone the specified repository"""
     logging.debug(project_url)
-    Repo.clone_from(url=project_url, to_path=tmpdir.name, multi_options=["--depth 1"])
+    Repo.clone_from(url=project_url, to_path=tmpdir, multi_options=["--depth 1"])
 
 
 if __name__ == "__main__":
-    p_with_issues_fixed = 0
-    p_with_issues_found = 0
+    # initialize logging and set it to INFO
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%d/%m/%y %H:%M:%S",
+    )
+
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--scan-repo",
+        help="scan explicit repo with this name",
+        required=False,
+        default=False,
+        dest="scan_repo",
+    )
+    parser.add_argument(
+        "--gitlab-hostname",
+        help="hostname of gitlab (e.g. git.example.com)",
+        required=True,
+        dest="gitlab_hostname",
+    )
+    parser.add_argument(
+        "--gitlab-access-token",
+        help="access token for project or projects",
+        required=True,
+        dest="gitlab_access_token",
+    )
+    parser.add_argument(
+        "--template-name",
+        help="name of the template file used for the ticket description",
+        required=False,
+        default="default_issue_description.j2",
+        dest="template_name",
+    )
+    args = parser.parse_args()
+
+    gitlab_url = f"https://{args.gitlab_hostname}"
+    gitlab_url_with_login = (
+        f"https://scanner:{args.gitlab_access_token}@{args.gitlab_hostname}"
+    )
+
+    # login to gitlab with private token
+    gl = Gitlab(gitlab_url, private_token=args.gitlab_access_token)
+    P_WITH_ISSUES_FIXED = 0
+    P_WITH_ISSUES_FOUND = 0
     for p in get_projects():
         p_id = getattr(p, "id")
         p_path = getattr(p, "path_with_namespace")
@@ -197,17 +196,14 @@ if __name__ == "__main__":
             )
             continue
 
-        tmpdir = tempfile.TemporaryDirectory(prefix="kics-scan")
+        with tempfile.TemporaryDirectory(prefix="kics-scan") as tmpdir:
+            clone_repo(project_url=p_url)
+            P_WITH_ISSUES_FIXED, P_WITH_ISSUES_FOUND = run_scan(
+                project=p,
+                project_path=p_path,
+                projects_with_issues_fixed=P_WITH_ISSUES_FIXED,
+                projects_with_issues_found=P_WITH_ISSUES_FIXED,
+            )
 
-        clone_repo(project_url=p_url)
-        p_with_issues_fixed, p_with_issues_found = run_scan(
-            project=p,
-            project_path=p_path,
-            projects_with_issues_fixed=p_with_issues_fixed,
-            projects_with_issues_found=p_with_issues_fixed,
-        )
-
-        tmpdir.cleanup()
-
-    logging.info("issues found: %s", p_with_issues_found)
-    logging.info("issues fixed: %s", p_with_issues_fixed)
+    logging.info("issues found: %s", P_WITH_ISSUES_FOUND)
+    logging.info("issues fixed: %s", P_WITH_ISSUES_FIXED)
