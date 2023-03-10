@@ -6,7 +6,12 @@ test:
   stage: test
   script:
     - docker build -t kics .
-    - docker run --rm -e GITLAB_ACCESS_TOKEN=${KICS_SCAN_TEST_TOKEN} kics --scan-repo scanner-insecure-repo
+    - docker run --rm -e GITLAB_ACCESS_TOKEN=${KICS_SCAN_TEST_TOKEN} kics --scan-repo scanner-insecure-repo --write-json-file=scanner-results-test.json
+  artifacts:
+    paths:
+      - "scanner-results-test.json"
+    when: on_success
+    expire_in: "10 days"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME != $CI_DEFAULT_BRANCH
     - if: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
