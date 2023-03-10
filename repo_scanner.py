@@ -11,6 +11,7 @@ import logging
 import subprocess
 import tempfile
 from argparse import ArgumentParser
+import json
 from gitlab import Gitlab, GitlabListError, GitlabAuthenticationError
 from git import Repo
 from jinja2 import Environment, FileSystemLoader
@@ -55,8 +56,8 @@ def close_issue(project):
 
     if len(issue_list) > 0:
         issue = issue_list[0]
-        issues_fixed = 1
         if issue.state == "opened":
+            issues_fixed = 1
             issue.state_event = "close"
             comment_text = (
                 "Closed by the credential scanner because it did not "
@@ -118,6 +119,9 @@ def run_scan(
         check=False,
     )
 
+    logging.debug(scanner.stdout)
+    logging.debug(scanner.stderr)
+
     if scanner.returncode != 0:
         logging.info(
             "%s: returncode is %s - create a ticket", project_path, scanner.returncode
@@ -127,7 +131,7 @@ def run_scan(
         )
     else:
         projects_with_issues_fixed += close_issue(project=project)
-        logging.info("kics scan successful")
+        logging.info("%s: kics scan successful - did not find any leaked credentials.", project_path)
 
     return projects_with_issues_fixed, projects_with_issues_found
 
@@ -138,42 +142,55 @@ def clone_repo(project_url):
     Repo.clone_from(url=project_url, to_path=tmpdir, multi_options=["--depth 1"])
 
 
-if __name__ == "__main__":
-    # initialize logging and set it to INFO
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%d/%m/%y %H:%M:%S",
-    )
+def write_output(
+        projects_with_issues_fixed: int,
+        projects_with_issues_found: int,
+        filename: str):
+    """Write output to json file"""
+    output ={
+        "projects_with_issues_fixed": projects_with_issues_fixed,
+        "projects_with_issues_found": projects_with_issues_found
+    }
+    with open(filename, 'w', encoding="utf-8") as f:
+        json.dump(output, f)
 
+if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
         "--scan-repo",
         help="scan explicit repo with this name",
         required=False,
         default=False,
-        dest="scan_repo",
     )
     parser.add_argument(
         "--gitlab-hostname",
         help="hostname of gitlab (e.g. git.example.com)",
         required=True,
-        dest="gitlab_hostname",
     )
     parser.add_argument(
         "--gitlab-access-token",
         help="access token for project or projects",
         required=True,
-        dest="gitlab_access_token",
     )
     parser.add_argument(
         "--template-name",
         help="name of the template file used for the ticket description",
         required=False,
         default="default_issue_description.j2",
-        dest="template_name",
+    )
+    parser.add_argument(
+        "--write-json-file",
+        help="write statistics output in the named json file",
+        required=False,
+        default=False,
     )
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%d/%m/%y %H:%M:%S",
+    )
 
     gitlab_url = f"https://{args.gitlab_hostname}"
     gitlab_url_with_login = (
@@ -207,3 +224,10 @@ if __name__ == "__main__":
 
     logging.info("issues found: %s", P_WITH_ISSUES_FOUND)
     logging.info("issues fixed: %s", P_WITH_ISSUES_FIXED)
+
+    if args.write_json_file is not False:
+        write_output(
+            projects_with_issues_fixed=P_WITH_ISSUES_FIXED,
+            projects_with_issues_found=P_WITH_ISSUES_FOUND,
+            filename=args.write_json_file,
+        )
