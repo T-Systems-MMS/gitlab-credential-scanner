@@ -1,5 +1,5 @@
 # use the official kics image as basis image
-FROM checkmarx/kics:v1.6.12-debian
+FROM checkmarx/kics:v1.6.13-debian
 
 ENV GITLAB_ACCESS_TOKEN=GITLAB_ACCESS_TOKEN
 
