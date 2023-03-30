@@ -3,6 +3,10 @@
   "extends": [
     "config:base"
   ],
+  "schedule": "every weekday",
+	"timezone": "Europe/Berlin",
+	"ignoreUnstable": true,
+	"stabilityDays": 7,
   "gitlabci": {
     "fileMatch": [
       "^.gitlab-ci.yml$"
@@ -10,12 +14,19 @@
   },
   "packageRules": [
     {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchManagers": ["dockerfile", "pip_requirements"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
       "matchDatasources": [
         "docker"
       ],
       "labels": [
         "Renovate::Docker"
       ]
+
     },
     {
       "matchManagers": [
