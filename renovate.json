@@ -4,9 +4,9 @@
     "config:base"
   ],
   "schedule": "every weekday",
-	"timezone": "Europe/Berlin",
-	"ignoreUnstable": true,
-	"stabilityDays": 7,
+  "timezone": "Europe/Berlin",
+  "ignoreUnstable": true,
+  "stabilityDays": 7,
   "gitlabci": {
     "fileMatch": [
       "^.gitlab-ci.yml$"
