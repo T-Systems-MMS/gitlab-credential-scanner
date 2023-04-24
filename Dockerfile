@@ -6,9 +6,9 @@ ENV GITLAB_ACCESS_TOKEN=GITLAB_ACCESS_TOKEN
 # install necessary packages
 RUN set -eux; \
   apt-get update && \
-  apt-get install -y \
-  python3 \
-  python3-pip && \
+  apt-get install -y --no-install-recommends \
+  python3=3.10.6 \
+  python3-pip=22.0.2 && \
   apt-get clean all && \
   rm -rf /var/lib/apt/lists/*
 
