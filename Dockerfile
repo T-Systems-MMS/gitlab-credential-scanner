@@ -6,11 +6,10 @@ WORKDIR /
 ENV GITLAB_ACCESS_TOKEN=GITLAB_ACCESS_TOKEN
 
 # install necessary packages
-# hadolint ignore=DL3008
 RUN set -eux; \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-  python3 \
+  python3=3.7.3-1 \
   python3-pip=18.1-5 \
   python3-setuptools=40.8.0-1 && \
   apt-get clean all && \
