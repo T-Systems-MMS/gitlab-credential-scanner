@@ -14,18 +14,17 @@ test:
   needs:
     - build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "schedule" and $TEST_SCAN == "true"
 
-#scan:
-#  <<: *docker-login
-#  stage: kics-scan
-#  script:
-#    - docker run $CI_REGISTRY_IMAGE:latest --gitlab-hostname ${GITLAB_HOSTNAME} --gitlab-access-token ${GITLAB_ACCESS_TOKEN}
-#  needs:
-#    - build
-#    - test
-#  rules:
-#    - if: $CI_PIPELINE_SOURCE == "schedule"
+scan:
+  <<: *docker-login
+  stage: kics-scan
+  script:
+    - docker run $CI_REGISTRY_IMAGE:latest --gitlab-hostname ${GITLAB_HOSTNAME} --gitlab-access-token ${GITLAB_ACCESS_TOKEN}
+  needs:
+    - build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" and $LIVE_SCAN == "true"
 
 build:
   <<: *docker-login
