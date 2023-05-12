@@ -205,7 +205,7 @@ if __name__ == "__main__":
                 project=p,
                 project_path=p_path,
                 projects_with_issues_fixed=P_WITH_ISSUES_FIXED,
-                projects_with_issues_found=P_WITH_ISSUES_FIXED,
+                projects_with_issues_found=P_WITH_ISSUES_FOUND,
             )
 
     logging.info("issues found: %s", P_WITH_ISSUES_FOUND)
