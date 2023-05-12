@@ -14,7 +14,7 @@ test:
   needs:
     - build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" and $TEST_SCAN == "true"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $TEST_SCAN == "true"
 
 scan:
   <<: *docker-login
@@ -24,7 +24,7 @@ scan:
   needs:
     - build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" and $LIVE_SCAN == "true"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $LIVE_SCAN == "true"
 
 build:
   <<: *docker-login
