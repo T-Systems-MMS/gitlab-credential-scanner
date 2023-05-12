@@ -23,12 +23,12 @@ def get_projects():
         if args.scan_repo:
             logging.info("fetch %s from %s", args.scan_repo, gitlab_url)
             projects = gl.projects.list(
-                search=args.scan_repo, order_by="id", min_access_level=20
+                search=args.scan_repo, order_by="id", min_access_level=20, archived=False
             )
         else:
             logging.info("fetch list of all projects from %s", gitlab_url)
             projects = gl.projects.list(
-                get_all=True, order_by="id", min_access_level=20
+                get_all=True, order_by="id", min_access_level=20, archived=False
             )
     except GitlabListError:
         logging.error("can't fetch list from %s", gitlab_url)
