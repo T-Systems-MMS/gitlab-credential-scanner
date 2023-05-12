@@ -1,0 +1,18 @@
+name: hadolint
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docker-linting:
+    name: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
