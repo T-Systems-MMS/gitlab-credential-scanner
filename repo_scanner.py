@@ -23,12 +23,12 @@ def get_projects():
         if args.scan_repo:
             logging.info("fetch %s from %s", args.scan_repo, gitlab_url)
             projects = gl.projects.list(
-                search=args.scan_repo, order_by="id", min_access_level=20, archived=False
+                search=args.scan_repo, order_by="id", min_access_level=20, archived=False, with_issues_enabled=True
             )
         else:
             logging.info("fetch list of all projects from %s", gitlab_url)
             projects = gl.projects.list(
-                get_all=True, order_by="id", min_access_level=20, archived=False
+                get_all=True, order_by="id", min_access_level=20, archived=False, with_issues_enabled=True
             )
     except GitlabListError:
         logging.error("can't fetch list from %s", gitlab_url)
@@ -121,19 +121,23 @@ def run_scan(
     logging.debug(scanner.stdout)
     logging.debug(scanner.stderr)
 
-    if scanner.returncode != 0:
+# see https://docs.kics.io/latest/results/#results_status_code
+# for list of exit codes
+
+    if scanner.returncode in (2, 20, 30, 40, 50):
         logging.info(
             "%s: returncode is %s - create a ticket", project_path, scanner.returncode
         )
         projects_with_issues_found += create_issue(
             project=project, scanner_output=scanner.stdout.decode("utf-8")
         )
+    elif scanner.returncode in (126, 130):
+        logging.info("%s: kics scan failed - skip repository", project_path)
     else:
         projects_with_issues_fixed += close_issue(project=project)
         logging.info("%s: kics scan successful - did not find any leaked credentials.", project_path)
 
     return projects_with_issues_fixed, projects_with_issues_found
-
 
 def clone_repo(project_url):
     """Clone the specified repository"""
