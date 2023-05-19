@@ -131,11 +131,11 @@ def run_scan(
         projects_with_issues_found += create_issue(
             project=project, scanner_output=scanner.stdout.decode("utf-8")
         )
-    elif scanner.returncode in (126, 130):
-        logging.info("%s: kics scan failed - skip repository", project_path)
-    else:
+    elif scanner.returncode == 0:
         projects_with_issues_fixed += close_issue(project=project)
         logging.info("%s: kics scan successful - did not find any leaked credentials.", project_path)
+    else:
+        logging.info("%s: kics scan failed - skip issue creation", project_path)
 
     return projects_with_issues_fixed, projects_with_issues_found
 
