@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 from argparse import ArgumentParser
 from gitlab import Gitlab, GitlabListError, GitlabAuthenticationError
-from git import Repo
+from git import Repo, GitCommandError
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -141,8 +141,15 @@ def run_scan(
 
 def clone_repo(project_url):
     """Clone the specified repository"""
+    success = True
     logging.debug(project_url)
-    Repo.clone_from(url=project_url, to_path=tmpdir, multi_options=["--depth 1"])
+    try:
+        Repo.clone_from(url=project_url, to_path=tmpdir, multi_options=["--depth 1"])
+    except GitCommandError:
+        logging.warning("Unable to Clone Repository from URL %s", project_url)
+        success = False
+
+    return success
 
 
 if __name__ == "__main__":
@@ -204,13 +211,13 @@ if __name__ == "__main__":
             continue
 
         with tempfile.TemporaryDirectory(prefix="kics-scan") as tmpdir:
-            clone_repo(project_url=p_url)
-            P_WITH_ISSUES_FIXED, P_WITH_ISSUES_FOUND = run_scan(
-                project=p,
-                project_path=p_path,
-                projects_with_issues_fixed=P_WITH_ISSUES_FIXED,
-                projects_with_issues_found=P_WITH_ISSUES_FOUND,
-            )
+            if clone_repo(project_url=p_url):
+                P_WITH_ISSUES_FIXED, P_WITH_ISSUES_FOUND = run_scan(
+                    project=p,
+                    project_path=p_path,
+                    projects_with_issues_fixed=P_WITH_ISSUES_FIXED,
+                    projects_with_issues_found=P_WITH_ISSUES_FOUND,
+                )
 
     logging.info("issues found: %s", P_WITH_ISSUES_FOUND)
     logging.info("issues fixed: %s", P_WITH_ISSUES_FIXED)
