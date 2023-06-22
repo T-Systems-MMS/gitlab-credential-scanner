@@ -8,7 +8,7 @@ If you fixed the findings you can close the created issue and this job will auto
 
 ## Documentation
 
-Please have a look at our official documentation: [https://github.com/T-Systems-MMS/gitlab-credential-scanner](https://github.com/T-Systems-MMS/gitlab-credential-scanner)
+Please have a look at our official documentation: [https://t-systems-mms.github.io/gitlab-credential-scanner/](https://t-systems-mms.github.io/gitlab-credential-scanner/)
 
 ## Contributing
 
