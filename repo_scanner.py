@@ -15,6 +15,11 @@ from gitlab import Gitlab, GitlabListError, GitlabAuthenticationError
 from git import Repo, GitCommandError
 from jinja2 import Environment, FileSystemLoader
 
+class Scanner:
+    """Create object Scanner for kics scan timeout handling."""
+    def __init__(self, returncode, stdout):
+        self.returncode = returncode
+        self.stdout = stdout
 
 def get_projects():
     """Get a list of all projects."""
@@ -103,23 +108,32 @@ def run_scan(
     """Scan a project with kics."""
 
     logging.info("%s: starting kics scan", project_path)
-    scanner = subprocess.run(
-        [
-            "kics",
-            "scan",
-            "-i",
-            "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71",  # kics id for leaked credential scan only
-            "--no-color",
-            "-p",
-            ".",
-        ],
-        cwd=tmpdir,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        scanner = subprocess.run(
+            [
+                "kics",
+                "scan",
+                "-i",
+                "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71",  # kics id for leaked credential scan only
+                "--no-color",
+                "-p",
+                ".",
+            ],
+            cwd=tmpdir,
+            timeout=60,
+            capture_output=True,
+            check=False,
+        )
 
-    logging.debug(scanner.stdout)
-    logging.debug(scanner.stderr)
+        logging.debug(scanner.stdout)
+        logging.debug(scanner.stderr)
+
+    except subprocess.TimeoutExpired:
+        logging.info("kics scan timed out after 60 seconds - skip repository")
+        scanner = Scanner(
+            returncode = 50,
+            stdout = b"kics scan timed out after 60 seconds - please exclude your repository with label automated-credential-scan-disabled"
+        )
 
 # see https://docs.kics.io/latest/results/#results_status_code
 # for list of exit codes
