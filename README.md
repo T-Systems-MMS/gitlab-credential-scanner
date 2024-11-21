@@ -8,7 +8,7 @@ If you fixed the findings you can close the created issue and this job will auto
 
 ## Documentation
 
-Please have a look at our official documentation: [https://t-systems-mms.github.io/gitlab-credential-scanner/](https://t-systems-mms.github.io/gitlab-credential-scanner/)
+Please have a look at our official documentation: [https://telekom-mms.github.io/gitlab-credential-scanner/](https://telekom-mms.github.io/gitlab-credential-scanner/)
 
 ## Contributing
 
@@ -16,7 +16,7 @@ If you want to contribute you can create a merge request so other colleagues wil
 
 ## License
 
-Copyright 2022-2023 T-Systems Multimedia Solutions GmbH
+Copyright 2022-2024 Deutsche Telekom MMS GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
